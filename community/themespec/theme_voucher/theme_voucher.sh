@@ -78,13 +78,18 @@ login_with_voucher() {
 check_voucher() {
 	
 	# Strict Voucher Validation for shell escape prevention - Only alphanumeric (and dash character) allowed.
-        if validation=$(echo -n "$voucher" | grep -E "^[a-zA-Z0-9-/:.]{1,256}$"); then
-		#echo "Voucher Validation successful, proceeding"
+        if echo "${voucher}" | grep -qE "^[a-zA-Z0-9-]+$"; then
+            len=$(echo -n "${voucher}" | wc -c)
+            if [ "$len" -le 640 ]; then
+		echo "Voucher Validation successful, proceeding"
 		: #no-op
-	else
-		echo "Invalid Voucher - Voucher must be alphanumeric (and dash) of 9 chars."
-#todo
-		#return 1
+            else
+                echo "Voucher is too long"
+                return 1
+            fi
+        else
+		echo "Invalid Voucher - Voucher must be alphanumeric (and dash) of up to 640 chars."
+		return 1
 	fi
 
 	##############################################################################################################################
