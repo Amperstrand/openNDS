@@ -78,12 +78,13 @@ login_with_voucher() {
 check_voucher() {
 	
 	# Strict Voucher Validation for shell escape prevention - Only alphanumeric (and dash character) allowed.
-	if validation=$(echo -n $voucher | grep -E "^[a-zA-Z0-9-]{1,640}$"); then
+        if validation=$(echo -n "$voucher" | grep -E "^[a-zA-Z0-9-/:.]{1,256}$"); then
 		#echo "Voucher Validation successful, proceeding"
 		: #no-op
 	else
-		#echo "Invalid Voucher - Voucher is usually alphanumeric (and dash) of 9 chars. Will also accept lnurlw or cashu."
-		return 1
+		echo "Invalid Voucher - Voucher must be alphanumeric (and dash) of 9 chars."
+#todo
+		#return 1
 	fi
 
 	##############################################################################################################################
@@ -152,21 +153,42 @@ check_voucher() {
 				return 1
 			fi
 		fi
-  	elif [ $(echo -n "$voucher" | grep -ic "lnurlw") -ge 1 ]; then
-   		echo "Voucher entered was ${voucher}. This looks like an lnurlw note that can be redeemed. <br>"
-     		current_time=$(date +%s)
-       		#hardcode some slow defaults for now
-       		upload_rate=1024 #kb/s?
-	 	download_rate=1024
-   		upload_quota=10240 #bytes?
-     		download_quota=10240
-       		session_length=10 #minutes?
-	 	voucher_time_limit=$session_length
-   		# Log the voucher
-     		voucher_expiration=$(($current_time + $voucher_time_limit * 60))
-       		session_length=$voucher_time_limit
-	 	echo ${voucher},${upload_rate},${download_rate},${upload_quota},${download_quota},${session_length},${current_time} >> $voucher_roll
-	 	return 0
+
+elif [ $(echo -n "$voucher" | grep -ic "cashu") -ge 1 ]; then
+    echo "Voucher entered was ${voucher}. This looks like a cashu note that can be redeemed. <br>"
+    current_time=$(date +%s)
+    upload_rate=1024
+    download_rate=1024
+    upload_quota=0
+    download_quota=0
+    session_length=5
+
+    voucher_time_limit=$session_length
+
+    # Log the voucher
+    voucher_expiration=$(($current_time + $voucher_time_limit * 60))
+    session_length=$voucher_time_limit
+    echo ${voucher},${upload_rate},${download_rate},${upload_quota},${download_quota},${session_length},${current_time} >> $voucher_roll
+
+    return 0
+
+elif [ $(echo -n "$voucher" | grep -ic "lnurlw") -ge 1 ]; then
+    echo "Voucher entered was ${voucher}. This looks like an lnurlw note that can be redeemed. <br>"
+    current_time=$(date +%s)
+    upload_rate=512    # Different rates for lnurlw, if needed
+    download_rate=512  # Different rates for lnurlw, if needed
+    upload_quota=10240
+    download_quota=10240
+    session_length=10  # Different session length for lnurlw
+
+    voucher_time_limit=$session_length
+
+    # Log the voucher
+    voucher_expiration=$(($current_time + $voucher_time_limit * 60))
+    session_length=$voucher_time_limit
+    echo ${voucher},${upload_rate},${download_rate},${upload_quota},${download_quota},${session_length},${current_time} >> $voucher_roll
+
+    return 0
 	else
 		echo "No Voucher Found - Retry <br>"
 		return 1
@@ -285,7 +307,7 @@ voucher_form() {
 		<hr>
 		<form action=\"/opennds_preauth/\" method=\"get\">
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\"> 
-			<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required> I accept the Terms of Service<br>
+			<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required checked> I accept the Terms of Service<br>
 			Voucher #: <input type=\"text\" name=\"voucher\" value=\"$voucher_code\" required><br>
 			<input type=\"submit\" value=\"Connect\" >
 		</form>
